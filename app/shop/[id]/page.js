@@ -60,8 +60,8 @@ const ShopSingleDynamicV1 = () => {
                 const doc = res?.doc
                 if (!isMounted) return
 
-                const base = typeof process !== "undefined" ? (process.env.NEXT_PUBLIC_PAYLOAD_API_URL || process.env.PAYLOAD_API_URL) : ""
-                const joinURL = (b, p) => `${String(b || "").replace(/\\/+$/, "")}${String(p || "").startsWith("/") ? p : `/${p}`}`
+                const base = process.env.NEXT_PUBLIC_PAYLOAD_API_URL || process.env.PAYLOAD_API_URL || ""
+                const joinURL = (b, p) => `${String(b || "").replace(/\/+$/, "")}${String(p || "").startsWith("/") ? p : `/${p}`}`
                 const toMediaURL = (m) => {
                     const url = m?.url || m?.sizes?.thumbnail?.url || m?.sizes?.small?.url
                     if (!url || typeof url !== "string") return null
