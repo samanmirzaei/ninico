@@ -1,0 +1,27 @@
+{
+    "name": "start-app-dir",
+    "version": "2.0.0",
+    "private": true,
+    "author": "alithemes",
+    "scripts": {
+        "dev": "next dev",
+        "build": "next build",
+        "start": "next start",
+        "lint": "next lint",
+        "sass": "sass --watch public/assets/scss/main.scss:public/assets/css/main.css"
+    },
+    "dependencies": {
+        "@reduxjs/toolkit": "^2.2.7",
+        "next": "16.1.1",
+        "react": "^19.2.1",
+        "react-dom": "^19.2.1",
+        "rc-slider": "^10.4.0",
+        "rc-tooltip": "^6.1.4",
+        "react-modal-video": "^2.0.1",
+        "react-redux": "^9.1.2",
+        "react-toastify": "^10.0.6",
+        "sass": "^1.83.0",
+        "swiper": "^11.1.15",
+        "wowjs": "^1.1.3"
+    }
+}
