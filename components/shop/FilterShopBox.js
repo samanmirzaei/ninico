@@ -1,9 +1,9 @@
 'use client'
 import { addCart } from "@/features/shopSlice"
 import { addWishlist } from "@/features/wishlistSlice"
-import { Fragment, useState } from "react"
+import { Fragment, useEffect, useMemo, useState } from "react"
 import { useDispatch, useSelector } from "react-redux"
-import products from "../../data/products"
+import { getProductsList } from "@/lib/payload-api"
 import {
     addPerPage,
     addSort,
@@ -34,6 +34,70 @@ const FilterShopBox = () => {
 
     const dispatch = useDispatch()
 
+    const [activeIndex, setActiveIndex] = useState(2)
+    const handleOnClick = (index) => {
+        setActiveIndex(index)
+    }
+
+    const [isLoading, setIsLoading] = useState(false)
+    const [error, setError] = useState(null)
+    const [docs, setDocs] = useState([])
+
+    useEffect(() => {
+        let isMounted = true
+
+        const run = async () => {
+            setIsLoading(true)
+            setError(null)
+            try {
+                const res = await getProductsList({ page: 1, limit: 50 })
+                const list = Array.isArray(res?.docs) ? res.docs : []
+                if (!isMounted) return
+                setDocs(list)
+            } catch (e) {
+                if (!isMounted) return
+                setError(e?.message || "Failed to load products")
+                setDocs([])
+            } finally {
+                if (!isMounted) return
+                setIsLoading(false)
+            }
+        }
+
+        run()
+        return () => {
+            isMounted = false
+        }
+    }, [])
+
+    const products = useMemo(() => {
+        const imagePool = [
+            ["product-1.jpg", "product-2.jpg"],
+            ["product-3.jpg", "product-4.jpg"],
+            ["product-5.jpg", "product-6.jpg"],
+            ["product-7.jpg", "product-8.jpg"],
+        ]
+
+        return docs.map((doc, idx) => {
+            const images = imagePool[idx % imagePool.length]
+            const priceNow = typeof doc?.salePrice === "number" ? doc.salePrice : doc?.basePrice
+            const priceOld = typeof doc?.salePrice === "number" ? doc?.basePrice : null
+
+            return {
+                id: doc.slug,
+                slug: doc.slug,
+                title: doc.title,
+                imgf: images[0],
+                imgb: images[1],
+                price: {
+                    min: 0,
+                    max: priceNow,
+                },
+                priceOld,
+            }
+        })
+    }, [docs])
+
     const addToCart = (id) => {
         const item = products?.find((item) => item.id === id)
         dispatch(addCart({ product: item }))
@@ -41,11 +105,6 @@ const FilterShopBox = () => {
     const addToWishlist = (id) => {
         const item = products?.find((item) => item.id === id)
         dispatch(addWishlist({ product: item }))
-    }
-
-    const [activeIndex, setActiveIndex] = useState(2)
-    const handleOnClick = (index) => {
-        setActiveIndex(index)
     }
 
     // location filter
@@ -120,6 +179,8 @@ const FilterShopBox = () => {
 
     return (
         <>
+            {isLoading ? <h3>Loading...</h3> : null}
+            {error ? <h3>{error}</h3> : null}
             <div className="product-filter-content mb-40">
                 <div className="row align-items-center">
                     <div className="col-sm-6">

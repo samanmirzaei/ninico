@@ -1,6 +1,5 @@
 'use client'
 import Layout from "@/components/layout/Layout"
-import products from "@/data/products"
 import { addCart, addQty } from "@/features/shopSlice"
 import Link from "next/link"
 import { useParams } from "next/navigation"
@@ -8,6 +7,7 @@ import { useEffect, useState } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import { Autoplay, Navigation, Pagination } from "swiper/modules"
 import { Swiper, SwiperSlide } from "swiper/react"
+import { getProductBySlug } from "@/lib/payload-api"
 
 const swiperOptions = {
     modules: [Autoplay, Pagination, Navigation],
@@ -45,10 +45,59 @@ const swiperOptions = {
 const ShopSingleDynamicV1 = () => {
     const abc = useParams()
     const [product, setProduct] = useState({})
+    const [loading, setLoading] = useState(false)
+    const [error, setError] = useState(null)
     const id = abc.id
     useEffect(() => {
-        if (!id) <h1>Loading...</h1>
-        else setProduct(products.find((item) => item.id == id))
+        let isMounted = true
+
+        const run = async () => {
+            if (!id) return
+            setLoading(true)
+            setError(null)
+            try {
+                const res = await getProductBySlug(String(id))
+                const doc = res?.doc
+                if (!isMounted) return
+
+                const base = typeof process !== "undefined" ? (process.env.NEXT_PUBLIC_PAYLOAD_API_URL || process.env.PAYLOAD_API_URL) : ""
+                const joinURL = (b, p) => `${String(b || "").replace(/\\/+$/, "")}${String(p || "").startsWith("/") ? p : `/${p}`}`
+                const toMediaURL = (m) => {
+                    const url = m?.url || m?.sizes?.thumbnail?.url || m?.sizes?.small?.url
+                    if (!url || typeof url !== "string") return null
+                    if (url.startsWith("http")) return url
+                    return base ? joinURL(base, url) : url
+                }
+
+                const gallery = Array.isArray(doc?.gallery) ? doc.gallery : []
+                const mediaURLs = gallery.map(toMediaURL).filter(Boolean)
+
+                const imgf = mediaURLs[0] || "/assets/img/product/product-1.jpg"
+                const imgb = mediaURLs[1] || "/assets/img/product/product-2.jpg"
+
+                const priceNow = typeof doc?.salePrice === "number" ? doc.salePrice : doc?.basePrice
+                const priceOld = typeof doc?.salePrice === "number" ? doc?.basePrice : null
+
+                setProduct({
+                    id: doc?.slug,
+                    title: doc?.title,
+                    shortDescription: doc?.shortDescription || "",
+                    imgf,
+                    imgb,
+                    price: { max: priceNow },
+                    priceOld,
+                })
+            } catch (e) {
+                if (!isMounted) return
+                setError(e?.message || "Failed to load product")
+                setProduct({})
+            } finally {
+                if (!isMounted) return
+                setLoading(false)
+            }
+        }
+
+        run()
         return () => { }
     }, [id])
 
@@ -60,8 +109,7 @@ const ShopSingleDynamicV1 = () => {
     const dispatch = useDispatch()
 
     const addToCart = (id) => {
-        const item = products?.find((item) => item.id === id)
-        dispatch(addCart({ product: item }))
+        dispatch(addCart({ product }))
     }
     const qtyHandler = (id, qty) => {
         dispatch(addQty({ id, qty }))
@@ -73,14 +121,16 @@ const ShopSingleDynamicV1 = () => {
             <Layout headerStyle={3} footerStyle={1} breadcrumbTitle="Shop Details">
                 <section className="product-area pt-80 pb-50">
                     <div className="container">
+                        {loading ? <h3>Loading...</h3> : null}
+                        {error ? <h3>{error}</h3> : null}
                         <div className="row">
                             <div className="col-lg-5 col-md-12">
                                 <div className="tpproduct-details__list-img">
                                     <div className="tpproduct-details__list-img-item">
-                                        <img src={`/assets/img/product/${product.imgf}`} alt="" />
+                                        <img src={product.imgf || "/assets/img/product/product-1.jpg"} alt="" />
                                     </div>
                                     <div className="tpproduct-details__list-img-item">
-                                        <img src={`/assets/img/product/${product.imgb}`} alt="" />
+                                        <img src={product.imgb || "/assets/img/product/product-2.jpg"} alt="" />
                                     </div>
                                 </div>
                             </div>
@@ -100,11 +150,11 @@ const ShopSingleDynamicV1 = () => {
                                         <span className="tpproduct-details__stock">In Stock</span>
                                     </div>
                                     <div className="tpproduct-details__price mb-30">
-                                        <del>$9.35</del>
+                                        {product?.priceOld ? <del>$ {product.priceOld}</del> : null}
                                         <span>$ {product?.price?.max}</span>
                                     </div>
                                     <div className="tpproduct-details__pera">
-                                        <p>Priyoshop has brought to you the Hijab 3 Pieces Combo Pack PS23. It is a <br />completely modern design and you feel comfortable to put on this hijab. <br />Buy it at the best price.</p>
+                                        {product?.shortDescription ? <p>{product.shortDescription}</p> : null}
                                     </div>
                                     <div className="tpproduct-details__count d-flex align-items-center flex-wrap mb-25">
                                         <div className="product-quantity">

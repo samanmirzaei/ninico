@@ -6,7 +6,7 @@ const ShopCardList = ({ item, addToCart, addToWishlist }) => {
                 <div className="col-lg-4 col-md-12">
                     <div className="tpproduct__thumb">
                         <div className="tpproduct__thumbitem p-relative">
-                            <Link href="/shop-details">
+                            <Link href={`/shop/${item.id}`}>
                                 <img src={`/assets/img/product/${item.imgf}`} alt="product-thumb" />
                                 <img className="thumbitem-secondary" src={`/assets/img/product/${item.imgb}`} alt="product-thumb" />
                             </Link>
@@ -15,10 +15,10 @@ const ShopCardList = ({ item, addToCart, addToWishlist }) => {
                 </div>
                 <div className="col-lg-8 col-md-12">
                     <div className="filter-product ml-20 pt-30">
-                        <h3 className="filter-product-title"><Link href="/shop-details">Miko Wooden Bluetooth Shirt</Link></h3>
+                        <h3 className="filter-product-title"><Link href={`/shop/${item.id}`}>{item.title}</Link></h3>
                         <div className="tpproduct__ammount">
-                            <span>$31.00</span>
-                            <del>$25.00</del>
+                            <span>${item?.price?.max}.00</span>
+                            {item?.priceOld ? <del>${item.priceOld}.00</del> : null}
                         </div>
                         <div className="tpproduct__rating mb-15">
                             <ul>

@@ -1,22 +1,72 @@
 "use client";
 import Layout from "@/components/layout/Layout";
-import data from "@/util/blog.json";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { getPostBySlug } from "@/lib/payload-api";
 
 export default function BlogDetails() {
     let Router = useParams();
     const [blogPost, setBlogPost] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
     const id = Router.id;
 
     useEffect(() => {
-        setBlogPost(data.find((data) => data.id == id));
+        let isMounted = true;
+
+        const run = async () => {
+            if (!id) return;
+            setLoading(true);
+            setError(null);
+            try {
+                const res = await getPostBySlug(String(id));
+                if (!isMounted) return;
+                setBlogPost(res?.doc || null);
+            } catch (e) {
+                if (!isMounted) return;
+                setError(e?.message || "Failed to load post");
+                setBlogPost(null);
+            } finally {
+                if (!isMounted) return;
+                setLoading(false);
+            }
+        };
+
+        run();
+        return () => {
+            isMounted = false;
+        };
     }, [id]);
+
+    const layout = blogPost?.layout || [];
+    const richTextBlock = Array.isArray(layout) ? layout.find((b) => b?.blockType === "richText") : null;
+    const richText =
+        typeof richTextBlock?.content === "string"
+            ? richTextBlock.content
+            : blogPost?.excerpt || blogPost?.seo?.description || "";
 
     return (
         <>
-            {blogPost && (
+            {loading && (
+                <Layout headerStyle={3} footerStyle={1} breadcrumbTitle="Blog Details">
+                    <div className="postbox-area pt-80 pb-60">
+                        <div className="container">
+                            <h3>Loading...</h3>
+                        </div>
+                    </div>
+                </Layout>
+            )}
+            {error && (
+                <Layout headerStyle={3} footerStyle={1} breadcrumbTitle="Blog Details">
+                    <div className="postbox-area pt-80 pb-60">
+                        <div className="container">
+                            <h3>{error}</h3>
+                        </div>
+                    </div>
+                </Layout>
+            )}
+            {blogPost && !loading && !error && (
                 <Layout headerStyle={3} footerStyle={1} breadcrumbTitle="Blog Details">
                     <div className="postbox-area pt-80 pb-60">
                         <div className="container">
@@ -25,7 +75,7 @@ export default function BlogDetails() {
                                     <div className="postbox__wrapper pr-20">
                                         <article className="postbox__item format-image mb-50 transition-3">
                                             <div className="postbox__thumb w-img mb-30">
-                                                <img src={`/assets/img/blog/${blogPost.img}`} alt="" />
+                                                <img src={`/assets/img/blog/blog-in-01.jpg`} alt="" />
                                             </div>
                                             <div className="postbox__content">
                                                 <div className="row">
@@ -47,8 +97,7 @@ export default function BlogDetails() {
                                                                 </span>
                                                             </div>
                                                             <h4 className="mb-35">{blogPost.title}</h4>
-                                                            <p>Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, aperiam ipsquae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim voluptatem voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet.</p>
-                                                            <p>Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, aperiam ipsquae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.</p>
+                                                            {richText ? <p>{richText}</p> : null}
                                                         </div>
                                                     </div>
                                                 </div>
